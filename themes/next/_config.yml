@@ -196,8 +196,8 @@ site_state: true
 # Value before `||` delimiter is the target permalink.
 # Value after `||` delimiter is the name of Font Awesome icon. If icon (with or without delimiter) is not specified, globe icon will be loaded.
 social:
-  GitHub: https://github.com/zhengyanbin || github
-  E-Mail: mailto:zhybin90@126.com || envelope
+  GitHub: https://github.com/b1n-next || github
+  E-Mail: mailto:zhnnn8@126.com || envelope
   #Weibo: https://weibo.com/yourname || weibo
   #Google: https://plus.google.com/yourname || google
   #Twitter: https://twitter.com/yourname || twitter
@@ -458,8 +458,8 @@ bookmark:
 # `Follow me on GitHub` banner in the top-right corner.
 github_banner:
   enable: true
-  permalink: https://github.com/zhengyanbin
-  title: zhengyanbin's GitHub
+  permalink: https://github.com/b1n-next
+  title: b1n-next's GitHub
 
 # ---------------------------------------------------------------
 # Font Settings
@@ -672,12 +672,12 @@ livere_uid: # <your_uid>
 # For more information: https://github.com/gitalk/gitalk
 gitalk:
   enable: true
-  github_id: zhengyanbin
-  repo: zhengyanbin.github.io # Repository name to store issues
+  github_id: b1n-next
+  repo: zhnnn.github.io # Repository name to store issues
   client_id: 9f0924da3df307589833 # GitHub Application Client ID
   client_secret: c4e95aa7e43085f9f27984b1279f12e49bb1f4a7 # GitHub Application Client Secret
-  owner: zhengyanbin
-  admin_user: zhengyanbin # GitHub repo owner and collaborators, only these guys can initialize gitHub issues
+  owner: b1n-next
+  admin_user: b1n-next # GitHub repo owner and collaborators, only these guys can initialize gitHub issues
   distraction_free_mode: true # Facebook-like distraction free mode
   # Gitalk's display language depends on user's browser or system environment
   # If you want everyone visiting your site to see a uniform language, you can set a force language value
