@@ -7,7 +7,7 @@ title: 新起点
 subtitle: 有志始知蓬莱近，无为总觉咫尺远
 description:
 keywords: Java,JavaEE,Linux,Python,SQL,C#,服务端,架构,微服务
-author: zhengyanbin
+author: zhnnn
 language: zh-CN
 timezone: Asia/Shanghai
 
@@ -86,7 +86,7 @@ search:
 ## Docs: https://hexo.io/docs/deployment.html
 deploy:
   type: git
-  repo: https://github.com/zhengyanbin/zhengyanbin.github.io.git
+  repo: https://github.com/b1n-next/zhnnn.github.io.git
   branch: master
 
 # hexo-neat
