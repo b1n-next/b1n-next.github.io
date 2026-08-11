@@ -124,6 +124,25 @@ symbols_count_time:
   awl: 4
   wpm: 275
 
+# HTML minifier (hexo-html-minifier: collapse whitespace, drop comments)
+html_minifier:
+  silent: true
+  collapseBooleanAttributes: true
+  collapseWhitespace: true
+  ignoreCustomComments:
+    - !!js/regexp /^\s*more/
+  removeComments: true
+  removeEmptyAttributes: true
+  removeScriptTypeAttributes: true
+  removeStyleLinkTypeAttributes: true
+  minifyJS: false
+  minifyCSS: true
+
+# CSS minifier (hexo-clean-css)
+clean_css:
+  exclude:
+    - '**/*.min.css'
+
 # Deployment
 ## Docs: https://hexo.io/docs/deployment.html
 deploy:
