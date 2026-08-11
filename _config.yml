@@ -64,6 +64,13 @@ index_generator:
   per_page: 10
   order_by: -date
 
+# Excerpt (hexo-excerpt: auto-split excerpt + more for posts without <!-- more -->)
+excerpt:
+  depth: 5
+  excerpt_excludes: []
+  more_excludes: []
+  hideWholePostExcerpts: false
+
 # Category & Tag
 default_category: uncategorized
 category_map:
