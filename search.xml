@@ -141,30 +141,6 @@
       </tags>
   </entry>
   <entry>
-    <title>tomcat下各日志文件的说明</title>
-    <url>/articles/the-log-files-of-tomcat/</url>
-    <content><![CDATA[<p>&emsp;&emsp;今天同事在使用tomcat发布项目的时候，遇到个问题，导致项目一直无法启动，查看tomcat控制台输出，发现启动日志仅有一句描述：<code>严重: One or more listeners failed to start. Full details will be found in the appropriate container log file</code>，第一时间认为是spring容器初始化失败，那么把spring加载配置文件及初始化的日志级别调整为debug不就万事大吉了么。<span id="more"></span><br>&emsp;&emsp;然并卵，日志输出中还是仅有那一句描述，使用tomcat-manager卸载-发布-卸载-发布多个循环，仍无果。<br>&emsp;&emsp;仔细思考想想，最近查问题都是使用catalina.out以及项目日志来排查，tomcat的其他日志中是不是藏有猫腻。<br>&emsp;&emsp;最终在<code>localhost.*.log</code>中发现了问题，项目中spring容器扫描package时加载了不同包名但类名相同的bean，导致初始化监听器失败，可是为什么应用的日志组件已经启动，为什么没有报呢？还是翻翻spring、tomcat的源码瞧个仔细吧。<br>经查阅，spring中contextloadlistener中的异常都是抛出到web容器的，由容器来进行处理，那么就可以定位到tomcat中<a href="http://svn.apache.org/repos/asf/tomcat/tc8.5.x/trunk/java/org/apache/catalina/core/StandardContext.java">standardcontext中初始化listener的位置</a>，摘录如下：  </p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">for</span> (<span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> <span class="number">0</span>; i &lt; instances.length; i++) &#123;</span><br><span class="line">    <span class="keyword">if</span> (!(instances[i] <span class="keyword">instanceof</span> ServletContextListener))</span><br><span class="line">        <span class="keyword">continue</span>;</span><br><span class="line">    <span class="type">ServletContextListener</span> <span class="variable">listener</span> <span class="operator">=</span></span><br><span class="line">        (ServletContextListener) instances[i];</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        fireContainerEvent(<span class="string">&quot;beforeContextInitialized&quot;</span>, listener);</span><br><span class="line">        <span class="keyword">if</span> (noPluggabilityListeners.contains(listener)) &#123;</span><br><span class="line">            listener.contextInitialized(tldEvent);</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            listener.contextInitialized(event);</span><br><span class="line">        &#125;</span><br><span class="line">        fireContainerEvent(<span class="string">&quot;afterContextInitialized&quot;</span>, listener);</span><br><span class="line">    &#125; <span class="keyword">catch</span> (Throwable t) &#123;</span><br><span class="line">        ExceptionUtils.handleThrowable(t);</span><br><span class="line">        fireContainerEvent(<span class="string">&quot;afterContextInitialized&quot;</span>, listener);</span><br><span class="line">        getLogger().error</span><br><span class="line">            (sm.getString(<span class="string">&quot;standardContext.listenerStart&quot;</span>, instances[i].getClass().getName()), t);</span><br><span class="line">        ok = <span class="literal">false</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>&emsp;&emsp;好吧，如此可知道日志是通过standardcontext的父类ContainerBase来输出的，顺便瞅一眼tomcat的日志配置，默认为<code>conf/logging.properties</code>，看到该类的日志被输出到location.*.log中，与文首场景中对应上了。<br>&emsp;&emsp;这么简单的问题查了小半天，惆怅。<br>&emsp;&emsp;tomcat的相关文档中提示：调用<code>javax.servlet.ServletContext.log(...)</code>输出日志会被tomcat内部日志组件处理，按照日志配置文件中<code>org.apache.catalina.core.ContainerBase.[${engine}].[${host}].[${context}]</code> 的形式被分类记录，那我们顺便了解下tomcat默认的日志配置吧。</p>
-<blockquote>
-<p>1catalina.org.apache.juli.FileHandler.level &#x3D; FINE<br>1catalina.org.apache.juli.FileHandler.directory &#x3D; ${catalina.base}&#x2F;logs<br>1catalina.org.apache.juli.FileHandler.prefix &#x3D; catalina.</p>
-<p>2localhost.org.apache.juli.FileHandler.level &#x3D; FINE<br>2localhost.org.apache.juli.FileHandler.directory &#x3D; ${catalina.base}&#x2F;logs<br>2localhost.org.apache.juli.FileHandler.prefix &#x3D; localhost.</p>
-<p>3manager.org.apache.juli.FileHandler.level &#x3D; FINE<br>3manager.org.apache.juli.FileHandler.directory &#x3D; ${catalina.base}&#x2F;logs<br>3manager.org.apache.juli.FileHandler.prefix &#x3D; manager.</p>
-<p>4host-manager.org.apache.juli.FileHandler.level &#x3D; FINE<br>4host-manager.org.apache.juli.FileHandler.directory &#x3D; ${catalina.base}&#x2F;logs<br>4host-manager.org.apache.juli.FileHandler.prefix &#x3D; host-manager.
-   </p>
-</blockquote>
-<p>&emsp;&emsp;另外，在<code>conf/server.xml</code>中我们可以开启请求记录日志，那么可以输出五个文件：<br>1.catalina.yyyy-MM-dd.log  Cataline引擎的日志文件，记录启动的JVM参数以及操作系统等信息<br>2.localhost.yyyy-MM-dd.log  tomcat中名为localhost的host日志输出，记录host初始化的日志<br>3.localhost_access_log.yyyy-MM-dd.txt  记录localhost下各应用的请求<br>4.host-manager.yyyy-MM-dd.log  记录localhost下<a href="http://tomcat.apache.org/tomcat-8.5-doc/host-manager-howto.html">host-manager</a>的应用日志<br>5.manager.yyyy-MM-dd.log  记录localhost下<a href="http://tomcat.apache.org/tomcat-8.5-doc/manager-howto.html">manager</a>的应用日志</p>
-]]></content>
-      <categories>
-        <category>Tomcat</category>
-      </categories>
-      <tags>
-        <tag>java</tag>
-        <tag>tomcat</tag>
-        <tag>spring</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>使用antisamy防止xss注入</title>
     <url>/articles/prevent-xss-with-antisamy-in-java/</url>
     <content><![CDATA[<p>Java中处理xss的方式有多种，一般使用html entity转义，校验输入，清理有危害代码片段等方法。</p>
@@ -173,7 +149,7 @@
 <li>校验输入可以在数据提交前防止用户添加特殊字符，但不是主要防御方法，只是有助于减少xss漏洞。</li>
 <li>清理是一种强有力的防御措施，清除可能有害的标记，将不可接受的用户输入更改为可接受的格式，以确保接收到的数据不会对用户以及数据库造成损害。在允许使用html的站点上，这种方式效果较好。</li>
 </ul>
-<p>实际处理中，一般采用以上几种方式组合使用，但仍不能涵盖所有xss攻击，安全测试必不可少！<br>下面就清理有害代码的来做一次实践，利用了antisamy来完成有害代码的清理，jsoup等其他工具也可以做到。</p>
+<p>实际处理中，一般采用以上几种方式组合使用，但仍不能涵盖所有xss攻击，安全测试必不可少！<span id="more"></span><br>下面就清理有害代码的来做一次实践，利用了antisamy来完成有害代码的清理，jsoup等其他工具也可以做到。</p>
 <ol>
 <li><p>添加maven依赖</p>
  <figure class="highlight xml"><table><tr><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">	<span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.owasp.antisamy<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">	<span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>antisamy<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line">	<span class="tag">&lt;<span class="name">version</span>&gt;</span>1.5.8<span class="tag">&lt;/<span class="name">version</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br></pre></td></tr></table></figure></li>
@@ -231,6 +207,30 @@
       <tags>
         <tag>java</tag>
         <tag>xsd</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>tomcat下各日志文件的说明</title>
+    <url>/articles/the-log-files-of-tomcat/</url>
+    <content><![CDATA[<p>&emsp;&emsp;今天同事在使用tomcat发布项目的时候，遇到个问题，导致项目一直无法启动，查看tomcat控制台输出，发现启动日志仅有一句描述：<code>严重: One or more listeners failed to start. Full details will be found in the appropriate container log file</code>，第一时间认为是spring容器初始化失败，那么把spring加载配置文件及初始化的日志级别调整为debug不就万事大吉了么。<span id="more"></span><br>&emsp;&emsp;然并卵，日志输出中还是仅有那一句描述，使用tomcat-manager卸载-发布-卸载-发布多个循环，仍无果。<br>&emsp;&emsp;仔细思考想想，最近查问题都是使用catalina.out以及项目日志来排查，tomcat的其他日志中是不是藏有猫腻。<br>&emsp;&emsp;最终在<code>localhost.*.log</code>中发现了问题，项目中spring容器扫描package时加载了不同包名但类名相同的bean，导致初始化监听器失败，可是为什么应用的日志组件已经启动，为什么没有报呢？还是翻翻spring、tomcat的源码瞧个仔细吧。<br>经查阅，spring中contextloadlistener中的异常都是抛出到web容器的，由容器来进行处理，那么就可以定位到tomcat中<a href="http://svn.apache.org/repos/asf/tomcat/tc8.5.x/trunk/java/org/apache/catalina/core/StandardContext.java">standardcontext中初始化listener的位置</a>，摘录如下：  </p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">for</span> (<span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> <span class="number">0</span>; i &lt; instances.length; i++) &#123;</span><br><span class="line">    <span class="keyword">if</span> (!(instances[i] <span class="keyword">instanceof</span> ServletContextListener))</span><br><span class="line">        <span class="keyword">continue</span>;</span><br><span class="line">    <span class="type">ServletContextListener</span> <span class="variable">listener</span> <span class="operator">=</span></span><br><span class="line">        (ServletContextListener) instances[i];</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        fireContainerEvent(<span class="string">&quot;beforeContextInitialized&quot;</span>, listener);</span><br><span class="line">        <span class="keyword">if</span> (noPluggabilityListeners.contains(listener)) &#123;</span><br><span class="line">            listener.contextInitialized(tldEvent);</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            listener.contextInitialized(event);</span><br><span class="line">        &#125;</span><br><span class="line">        fireContainerEvent(<span class="string">&quot;afterContextInitialized&quot;</span>, listener);</span><br><span class="line">    &#125; <span class="keyword">catch</span> (Throwable t) &#123;</span><br><span class="line">        ExceptionUtils.handleThrowable(t);</span><br><span class="line">        fireContainerEvent(<span class="string">&quot;afterContextInitialized&quot;</span>, listener);</span><br><span class="line">        getLogger().error</span><br><span class="line">            (sm.getString(<span class="string">&quot;standardContext.listenerStart&quot;</span>, instances[i].getClass().getName()), t);</span><br><span class="line">        ok = <span class="literal">false</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>&emsp;&emsp;好吧，如此可知道日志是通过standardcontext的父类ContainerBase来输出的，顺便瞅一眼tomcat的日志配置，默认为<code>conf/logging.properties</code>，看到该类的日志被输出到location.*.log中，与文首场景中对应上了。<br>&emsp;&emsp;这么简单的问题查了小半天，惆怅。<br>&emsp;&emsp;tomcat的相关文档中提示：调用<code>javax.servlet.ServletContext.log(...)</code>输出日志会被tomcat内部日志组件处理，按照日志配置文件中<code>org.apache.catalina.core.ContainerBase.[${engine}].[${host}].[${context}]</code> 的形式被分类记录，那我们顺便了解下tomcat默认的日志配置吧。</p>
+<blockquote>
+<p>1catalina.org.apache.juli.FileHandler.level &#x3D; FINE<br>1catalina.org.apache.juli.FileHandler.directory &#x3D; ${catalina.base}&#x2F;logs<br>1catalina.org.apache.juli.FileHandler.prefix &#x3D; catalina.</p>
+<p>2localhost.org.apache.juli.FileHandler.level &#x3D; FINE<br>2localhost.org.apache.juli.FileHandler.directory &#x3D; ${catalina.base}&#x2F;logs<br>2localhost.org.apache.juli.FileHandler.prefix &#x3D; localhost.</p>
+<p>3manager.org.apache.juli.FileHandler.level &#x3D; FINE<br>3manager.org.apache.juli.FileHandler.directory &#x3D; ${catalina.base}&#x2F;logs<br>3manager.org.apache.juli.FileHandler.prefix &#x3D; manager.</p>
+<p>4host-manager.org.apache.juli.FileHandler.level &#x3D; FINE<br>4host-manager.org.apache.juli.FileHandler.directory &#x3D; ${catalina.base}&#x2F;logs<br>4host-manager.org.apache.juli.FileHandler.prefix &#x3D; host-manager.
+   </p>
+</blockquote>
+<p>&emsp;&emsp;另外，在<code>conf/server.xml</code>中我们可以开启请求记录日志，那么可以输出五个文件：<br>1.catalina.yyyy-MM-dd.log  Cataline引擎的日志文件，记录启动的JVM参数以及操作系统等信息<br>2.localhost.yyyy-MM-dd.log  tomcat中名为localhost的host日志输出，记录host初始化的日志<br>3.localhost_access_log.yyyy-MM-dd.txt  记录localhost下各应用的请求<br>4.host-manager.yyyy-MM-dd.log  记录localhost下<a href="http://tomcat.apache.org/tomcat-8.5-doc/host-manager-howto.html">host-manager</a>的应用日志<br>5.manager.yyyy-MM-dd.log  记录localhost下<a href="http://tomcat.apache.org/tomcat-8.5-doc/manager-howto.html">manager</a>的应用日志</p>
+]]></content>
+      <categories>
+        <category>Tomcat</category>
+      </categories>
+      <tags>
+        <tag>java</tag>
+        <tag>tomcat</tag>
+        <tag>spring</tag>
       </tags>
   </entry>
 </search>

@@ -310,7 +310,7 @@
 <li>校验输入可以在数据提交前防止用户添加特殊字符，但不是主要防御方法，只是有助于减少xss漏洞。</li>
 <li>清理是一种强有力的防御措施，清除可能有害的标记，将不可接受的用户输入更改为可接受的格式，以确保接收到的数据不会对用户以及数据库造成损害。在允许使用html的站点上，这种方式效果较好。</li>
 </ul>
-<p>实际处理中，一般采用以上几种方式组合使用，但仍不能涵盖所有xss攻击，安全测试必不可少！<br>下面就清理有害代码的来做一次实践，利用了antisamy来完成有害代码的清理，jsoup等其他工具也可以做到。</p>
+<p>实际处理中，一般采用以上几种方式组合使用，但仍不能涵盖所有xss攻击，安全测试必不可少！<span id="more"></span><br>下面就清理有害代码的来做一次实践，利用了antisamy来完成有害代码的清理，jsoup等其他工具也可以做到。</p>
 <ol>
 <li><p>添加maven依赖</p>
  <figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">	<span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.owasp.antisamy<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">	<span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>antisamy<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line">	<span class="tag">&lt;<span class="name">version</span>&gt;</span>1.5.8<span class="tag">&lt;/<span class="name">version</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br></pre></td></tr></table></figure></li>
